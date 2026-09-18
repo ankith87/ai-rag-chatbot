@@ -1,0 +1,363 @@
+{
+  "name": "RAG Pipeline and chatbot v1",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1SrpQGKNJ7UfWakx7rmaVqvNpgFDg-Nt3",
+          "mode": "list",
+          "cachedResultName": "FAQ",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1SrpQGKNJ7UfWakx7rmaVqvNpgFDg-Nt3"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        1104
+      ],
+      "id": "9e68790e-b690-4b87-9e4f-89ddfa0bf4c1",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "rWalhntbBZffBbpq",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1136,
+        1104
+      ],
+      "id": "942b2798-8d24-40b7-9bae-46d9e5e9a82a",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "rWalhntbBZffBbpq",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "vector1",
+          "mode": "list",
+          "cachedResultName": "vector1"
+        },
+        "options": {
+          "pineconeNamespace": "FAQ"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -688,
+        1104
+      ],
+      "id": "a95bbd2f-3ca1-49b6-8ea2-faea1a9f9518",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Vkvn0lIJHypeSlbt",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2-preview"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        1296
+      ],
+      "id": "ad4bdce6-77d4-46d4-b661-1cc7348f7fa0",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5GGEjfIgvD7KG498",
+          "name": "Gemini Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -608,
+        1312
+      ],
+      "id": "0db3825a-031e-4a5a-b507-cc043fc7ea2a",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        1504
+      ],
+      "id": "e11c86ef-6cf5-4d4b-81d7-9fba170cea30",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful customer support assistant for Tech Haven.\n\nYour job is to answer questions using the information retrieved from the Tech Haven knowledge base.\n\nRules:\n1. Always use the knowledge base when answering questions about Tech Haven policies, products, warranties, orders, refunds, shipping, or other company information.\n2. Do not invent, assume, or guess information that is not present in the knowledge base.\n3. If the knowledge base does not contain the answer, clearly say that the information was not found in the available Tech Haven knowledge base.\n4. Keep answers concise, clear, and directly relevant to the user's question.\n5. Do not provide unrelated suggestions or information from your general knowledge.\n6. If the user's question is unclear, ask a short clarification question."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        1088
+      ],
+      "id": "503b9f57-a736-4b61-93af-3b3d55acfab9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        112,
+        1344
+      ],
+      "id": "8c8ce51e-3dab-4baa-9849-7606c7025bb4",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "wnDC2Pqv4tCMWOs7",
+          "name": "vector1"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Call this tool to access the policy and FAQ database",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "vector1",
+          "mode": "list",
+          "cachedResultName": "vector1"
+        },
+        "options": {
+          "pineconeNamespace": "FAQ"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        1360
+      ],
+      "id": "19fb4919-ebe0-4b74-8d22-170f709f74e8",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Vkvn0lIJHypeSlbt",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2-preview"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        320,
+        1552
+      ],
+      "id": "2714eab0-8f29-48cc-b83c-9dec8825ba34",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5GGEjfIgvD7KG498",
+          "name": "Gemini Account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -48,
+        1088
+      ],
+      "id": "4e28b635-091f-43c4-afcc-3a0d58f434b0",
+      "name": "When chat message received",
+      "webhookId": "7c7b6b98-4675-40a6-9aa8-2320a182a0b0"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [
+        []
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f8e03432-5e8c-44ec-bd78-fb833187cdb6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd4b4645bf75593528404e6f258488dc43e0bffea0e672592184b780c368c241"
+  },
+  "id": "IgdlCuNXJicojh7T",
+  "tags": [
+    {
+      "updatedAt": "2026-08-24T04:44:37.894Z",
+      "createdAt": "2026-08-24T04:44:37.894Z",
+      "id": "FCrvMNwKC7GNpkHv",
+      "name": "practising with nate"
+    }
+  ]
+}
